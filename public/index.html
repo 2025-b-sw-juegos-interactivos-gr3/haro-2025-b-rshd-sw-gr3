@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Babylon.js Escena Simple</title>
+    <style>
+      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #121212; }
+      #renderCanvas { width: 100%; height: 100%; touch-action: none; display: block; }
+      .hud { position: absolute; top: 10px; left: 10px; color: #eee; font-family: system-ui, sans-serif; }
+      .hud a { color: #9ad; text-decoration: none; }
+    </style>
+    <!-- Babylon.js desde CDN -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/gui/babylon.gui.min.js"></script>
+  </head>
+  <body>
+    <canvas id="renderCanvas"></canvas>
+    <div class="hud">Babylon.js escena simple • Arrastra con el mouse para orbitar</div>
+    <script src="main.js" type="module"></script>
+  </body>
+  </html>
