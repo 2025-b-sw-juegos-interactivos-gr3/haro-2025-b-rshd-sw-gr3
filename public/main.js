@@ -95,6 +95,8 @@ function createScene() {
 
   // Robot multi-malla y animación de caminar
   const robot = createRobot(scene);
+  // Hacer que la cámara siga al personaje
+  camera.lockedTarget = robot.root; // la cámara orbita y "sigue" al root del robot
   let t = 0;
 
   // Animación simple
