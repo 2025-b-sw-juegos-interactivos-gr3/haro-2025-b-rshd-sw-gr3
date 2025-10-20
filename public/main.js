@@ -62,65 +62,105 @@ function createScene() {
   scene.clearColor = new BABYLON.Color4(0.07, 0.07, 0.08, 1);
 
   // Cámara orbital
-  const camera = new BABYLON.ArcRotateCamera('camera', Math.PI / 3, Math.PI / 3, 6, new BABYLON.Vector3(0, 1, 0), scene);
+  const camera = new BABYLON.ArcRotateCamera('camera', Math.PI / 3, Math.PI / 3, 8, new BABYLON.Vector3(0, 1, 0), scene);
   camera.attachControl(canvas, true);
   camera.lowerRadiusLimit = 2;
-  camera.upperRadiusLimit = 20;
+  camera.upperRadiusLimit = 40;
 
   // Luz
   const light = new BABYLON.HemisphericLight('light', new BABYLON.Vector3(0, 1, 0), scene);
   light.intensity = 0.9;
 
-  // Suelo
-  const ground = BABYLON.MeshBuilder.CreateGround('ground', { width: 10, height: 10 }, scene);
+  // Suelo "pasto gris" (procedimental simple)
+  const ground = BABYLON.MeshBuilder.CreateGround('ground', { width: 200, height: 200 }, scene);
   const groundMat = new BABYLON.StandardMaterial('groundMat', scene);
-  groundMat.diffuseColor = new BABYLON.Color3(0.15, 0.15, 0.18);
   groundMat.specularColor = new BABYLON.Color3(0, 0, 0);
+  const grassTex = new BABYLON.DynamicTexture('grayGrass', { width: 512, height: 512 }, scene, false);
+  const ctx = grassTex.getContext();
+  ctx.fillStyle = '#8a8d90';
+  ctx.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 3500; i++) {
+    ctx.fillStyle = i % 2 ? '#7f8286' : '#9a9da1';
+    ctx.fillRect(Math.random() * 512, Math.random() * 512, 1, 1);
+  }
+  grassTex.update();
+  groundMat.diffuseTexture = grassTex;
+  groundMat.diffuseTexture.uScale = 16;
+  groundMat.diffuseTexture.vScale = 16;
   ground.material = groundMat;
 
-  // Esfera
-  const sphere = BABYLON.MeshBuilder.CreateSphere('sphere', { diameter: 1.5, segments: 32 }, scene);
-  sphere.position.y = 1;
-  const sphereMat = new BABYLON.StandardMaterial('sphereMat', scene);
-  sphereMat.diffuseColor = new BABYLON.Color3(0.2, 0.6, 1.0);
-  sphereMat.emissiveColor = new BABYLON.Color3(0.02, 0.05, 0.1);
-  sphere.material = sphereMat;
-
-  // Caja
-  const box = BABYLON.MeshBuilder.CreateBox('box', { size: 1 }, scene);
-  box.position.set(-2, 0.5, -1.5);
-  const boxMat = new BABYLON.StandardMaterial('boxMat', scene);
-  boxMat.diffuseColor = new BABYLON.Color3(1.0, 0.5, 0.2);
-  box.material = boxMat;
-
-  // Robot multi-malla y animación de caminar
+  // Robot multi-malla
   const robot = createRobot(scene);
+  robot.root.position.y = 0.1; // pies sobre el suelo
   // Hacer que la cámara siga al personaje
-  camera.lockedTarget = robot.root; // la cámara orbita y "sigue" al root del robot
-  let t = 0;
+  camera.lockedTarget = robot.root;
 
-  // Animación simple
+  // Estructura simple: arco cerca del personaje
+  const structureMat = new BABYLON.StandardMaterial('structureMat', scene);
+  structureMat.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.75);
+  structureMat.specularColor = new BABYLON.Color3(0.1, 0.1, 0.12);
+
+  const archCenter = robot.root.position.add(new BABYLON.Vector3(0, 0, 2)); // frente al robot
+  const colL = BABYLON.MeshBuilder.CreateCylinder('archColL', { height: 1.6, diameter: 0.16 }, scene);
+  colL.position = new BABYLON.Vector3(archCenter.x - 0.6, 0.8, archCenter.z);
+  colL.material = structureMat;
+
+  const colR = BABYLON.MeshBuilder.CreateCylinder('archColR', { height: 1.6, diameter: 0.16 }, scene);
+  colR.position = new BABYLON.Vector3(archCenter.x + 0.6, 0.8, archCenter.z);
+  colR.material = structureMat;
+
+  const beam = BABYLON.MeshBuilder.CreateBox('archBeam', { width: 1.4, height: 0.18, depth: 0.22 }, scene);
+  beam.position = new BABYLON.Vector3(archCenter.x, 1.6, archCenter.z);
+  beam.material = structureMat;
+
+  // INPUT: WASD
+  const inputMap = {};
+  scene.onKeyboardObservable.add((kbInfo) => {
+    switch (kbInfo.type) {
+      case BABYLON.KeyboardEventTypes.KEYDOWN:
+        inputMap[kbInfo.event.key.toLowerCase()] = true;
+        break;
+      case BABYLON.KeyboardEventTypes.KEYUP:
+        inputMap[kbInfo.event.key.toLowerCase()] = false;
+        break;
+    }
+  });
+
+  // Parámetros de movimiento y animación
+  const moveSpeed = 2.8;   // unidades/seg
+  const rotSpeed = 2.8;    // rad/seg
+  let walkT = 0;           // fase de caminata
+
+  // Animación y control (reemplaza la animación anterior)
   scene.onBeforeRenderObservable.add(() => {
-    const dt = engine.getDeltaTime() / 1000; // segundos
-    t += dt;
-    sphere.rotation.y += dt * 1.5;
-    box.rotation.x += dt * 1.0;
-    box.rotation.y += dt * 1.2;
+    const dt = engine.getDeltaTime() / 1000;
 
-    // Movimiento del robot en un círculo y orientación hacia la tangente
-    const r = 2.5;
-    const ang = t * 0.6;
-    robot.root.position.x = Math.cos(ang) * r;
-    robot.root.position.z = Math.sin(ang) * r;
-    robot.root.rotation.y = ang + Math.PI / 2;
+    // Lectura WASD
+    const forward = (inputMap['w'] ? 1 : 0) + (inputMap['s'] ? -1 : 0); // W avanza, S retrocede
+    const turn = (inputMap['d'] ? 1 : 0) + (inputMap['a'] ? -1 : 0);    // D gira derecha, A gira izquierda
 
-    // Ciclo de caminata (balanceo de brazos y piernas)
-    const swing = Math.sin(t * 4.0);
-    const swing2 = Math.sin(t * 4.0 + Math.PI);
-    robot.armL.pivot.rotation.x = 0.6 * swing;
-    robot.armR.pivot.rotation.x = 0.6 * swing2;
-    robot.legL.pivot.rotation.x = 0.6 * swing2;
-    robot.legR.pivot.rotation.x = 0.6 * swing;
+    // Rotación del personaje
+    if (turn !== 0) {
+      robot.root.rotation.y += rotSpeed * turn * dt;
+    }
+
+    // Avance/retroceso
+    if (forward !== 0) {
+      const dir = robot.root.getDirection(BABYLON.Axis.Z);
+      robot.root.position.addInPlace(dir.scale(moveSpeed * forward * dt));
+      walkT += dt; // avanzar fase de caminata cuando hay movimiento
+    }
+
+    // Animación de caminar (balanceo de brazos y piernas)
+    const moving = forward !== 0;
+    const swing = Math.sin(walkT * 6.0) * (moving ? 1 : 0);
+
+    // Brazos
+    robot.armL.pivot.rotation.x = moving ? 0.6 * swing : robot.armL.pivot.rotation.x * 0.85;
+    robot.armR.pivot.rotation.x = moving ? -0.6 * swing : robot.armR.pivot.rotation.x * 0.85;
+    // Piernas
+    robot.legL.pivot.rotation.x = moving ? -0.6 * swing : robot.legL.pivot.rotation.x * 0.85;
+    robot.legR.pivot.rotation.x = moving ? 0.6 * swing : robot.legR.pivot.rotation.x * 0.85;
   });
 
   // GUI minimapa/label
