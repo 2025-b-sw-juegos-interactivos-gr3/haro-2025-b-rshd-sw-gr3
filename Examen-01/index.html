@@ -49,6 +49,41 @@
             border-radius: 10px;
             font-size: 20px;
         }
+        /* Estilos para la pantalla de victoria */
+        #victoryPanel {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(46, 204, 113, 0.95);
+            color: white;
+            padding: 40px;
+            font-family: 'Arial Black', sans-serif;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+        #victoryPanel h1 {
+            font-size: 40px;
+            margin: 0 0 20px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        #restartBtn {
+            background-color: white;
+            color: #27ae60;
+            border: none;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        #restartBtn:hover {
+            transform: scale(1.1);
+        }
     </style>
     <script src="https://cdn.babylonjs.com/babylon.js"></script>
     <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
@@ -70,6 +105,13 @@
         <p id="deliveredText">Bolsas entregadas: 0/3</p>
     </div>
 
+    <!-- Panel de Victoria -->
+    <div id="victoryPanel">
+        <h1>¡MISIÓN COMPLETADA! 🎉</h1>
+        <p>Has limpiado la ciudad.</p>
+        <button id="restartBtn" onclick="reiniciarJuego()">Jugar de nuevo</button>
+    </div>
+
     <script>
         const canvas = document.getElementById("renderCanvas");
         const engine = new BABYLON.Engine(canvas, true);
@@ -87,7 +129,7 @@
         // Variables para los modelos
         let camion = null;
         let bolsas = [];
-
+        
         const createScene = function () {
             const scene = new BABYLON.Scene(engine);
             scene.collisionsEnabled = true;
@@ -111,7 +153,8 @@
             // --- Suelo ---
             const suelo = BABYLON.MeshBuilder.CreateGround("suelo", { width: 60, height: 60 }, scene);
             const matSuelo = new BABYLON.StandardMaterial("matSuelo", scene);
-            matSuelo.diffuseColor = new BABYLON.Color3(0.2, 0.5, 0.2);
+            // Color ajustado para simular el pasto del modelo (verde más vivo/estilo low poly)
+            matSuelo.diffuseColor = new BABYLON.Color3(0.36, 0.58, 0.22);
             suelo.material = matSuelo;
 
             // Cargar calle
@@ -133,8 +176,9 @@
 
             const zonaVertedero = BABYLON.MeshBuilder.CreateGround("zonaVertedero", { width: 10, height: 10 }, scene);
             const matVertedero = new BABYLON.StandardMaterial("matVertedero", scene);
-            matVertedero.diffuseColor = new BABYLON.Color3(0.4, 0.3, 0.2);
-            matVertedero.alpha = 0.6;
+            // Color ajustado para simular el pasto del modelo (verde más vivo/estilo low poly)
+            matVertedero.diffuseColor = new BABYLON.Color3(0.36, 0.58, 0.22); 
+            matVertedero.alpha = 1; // Opaco
             zonaVertedero.material = matVertedero;
             zonaVertedero.position = new BABYLON.Vector3(0, 0.05, -20);
 
@@ -167,21 +211,6 @@
                 // Asignar el camión como objetivo de la cámara
                 camera.lockedTarget = camion;
                 
-                // Añadir un indicador visual del frente del camión
-                const indicadorFrente = BABYLON.MeshBuilder.CreateCylinder("indicador", {
-                    height: 0.5,
-                    diameter: 0.3
-                }, scene);
-                indicadorFrente.position = new BABYLON.Vector3(0, 1, 2);
-                indicadorFrente.rotation.x = Math.PI / 2;
-                
-                const matIndicador = new BABYLON.StandardMaterial("matIndicador", scene);
-                matIndicador.diffuseColor = new BABYLON.Color3(1, 0, 0);
-                matIndicador.emissiveColor = new BABYLON.Color3(1, 0, 0);
-                indicadorFrente.material = matIndicador;
-                
-                indicadorFrente.parent = camion;
-                
                 verificarCarga();
             });
 
@@ -196,6 +225,7 @@
                 BABYLON.SceneLoader.ImportMesh("", "model/", "low_poly_trash_bag.glb", scene, function(meshes) {
                     const bolsa = meshes[0];
                     bolsa.position = pos;
+                    bolsa.originalPosition = pos.clone(); // Guardar posición original para reiniciar
                     bolsa.position.y = 0.1;
                     bolsa.scaling = new BABYLON.Vector3(0.02, 0.02, 0.02);
                     bolsa.recogida = false;
@@ -291,8 +321,8 @@
                                 bolsaActual.parent = null;
                                 bolsaActual.position = new BABYLON.Vector3(
                                     vertedero.position.x + (Math.random() - 0.5) * 4,
-                                    1,
-                                    vertedero.position.z + (Math.random() - 0.5) * 4
+                                    0,
+                                    vertedero.position.z + 1.6
                                 );
                                 bolsaEnMano = false;
                                 bolsaActual = null;
@@ -317,6 +347,7 @@
 
                 if (bolsasEntregadas === totalBolsas) {
                     document.getElementById("statusText").textContent = "¡MISIÓN COMPLETADA! 🎉";
+                    document.getElementById("victoryPanel").style.display = "block";
                 }
             }
 
@@ -352,7 +383,6 @@
                         }
                     }
                     
-                    // Eliminada la actualización manual de camera.target, FollowCamera lo hace solo
                 }
             });
 
@@ -360,6 +390,39 @@
         };
 
         const scene = createScene();
+
+        // --- Función de Reinicio ---
+        window.reiniciarJuego = function() {
+            // Resetear variables
+            bolsaEnMano = false;
+            bolsaActual = null;
+            bolsasRecogidas = 0;
+            bolsasEntregadas = 0;
+
+            // Resetear UI
+            document.getElementById("victoryPanel").style.display = "none";
+            document.getElementById("statusText").textContent = "Busca las bolsas de basura";
+            document.getElementById("collectedText").textContent = `Bolsas recogidas: 0/${totalBolsas}`;
+            document.getElementById("deliveredText").textContent = `Bolsas entregadas: 0/${totalBolsas}`;
+
+            // Resetear Camión
+            if (camion) {
+                camion.position = new BABYLON.Vector3(0, 0.5, 10);
+                camion.rotation.y = 0;
+            }
+
+            // Resetear Bolsas
+            bolsas.forEach(bolsa => {
+                bolsa.parent = null; // Desvincular del camión
+                bolsa.recogida = false;
+                bolsa.position = bolsa.originalPosition.clone(); // Volver a posición original
+                bolsa.position.y = 0.1;
+                bolsa.setEnabled(true); // Asegurar que sea visible
+            });
+            
+            // Devolver foco al canvas
+            canvas.focus();
+        };
 
         engine.runRenderLoop(function () {
             scene.render();
