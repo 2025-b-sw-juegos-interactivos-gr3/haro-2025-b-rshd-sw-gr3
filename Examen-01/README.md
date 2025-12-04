@@ -26,13 +26,6 @@ Abre tu navegador en: **http://localhost:3000**
 
 Recoge las 3 bolsas de basura de las casas y llévalas al vertedero.
 
-## 📦 Modelos 3D Utilizados
-
-- `garbage_truck.glb` - Camión de basura
-- `low_poly_trash_bag.glb` - Bolsas de basura
-- `suburban_shabby_house_low_poly.glb` - Casas
-- `american_road_intersection.glb` - Intersección
-
 ## 🛠️ Tecnologías
 
 - Babylon.js 5.x
