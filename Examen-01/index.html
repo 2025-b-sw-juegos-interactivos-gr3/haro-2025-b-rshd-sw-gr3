@@ -153,7 +153,6 @@
             // --- Suelo ---
             const suelo = BABYLON.MeshBuilder.CreateGround("suelo", { width: 60, height: 60 }, scene);
             const matSuelo = new BABYLON.StandardMaterial("matSuelo", scene);
-            // Color ajustado para simular el pasto del modelo (verde más vivo/estilo low poly)
             matSuelo.diffuseColor = new BABYLON.Color3(0.36, 0.58, 0.22);
             suelo.material = matSuelo;
 
@@ -162,8 +161,6 @@
                 const calle = meshes[0];
                 calle.position = new BABYLON.Vector3(0, 0, 0);
                 calle.scaling = new BABYLON.Vector3(1.5, 1.5, 1.5);
-                
-                // Colisiones retiradas
             });
 
             // --- Zona de Vertedero ---
@@ -176,7 +173,6 @@
 
             const zonaVertedero = BABYLON.MeshBuilder.CreateGround("zonaVertedero", { width: 10, height: 10 }, scene);
             const matVertedero = new BABYLON.StandardMaterial("matVertedero", scene);
-            // Color ajustado para simular el pasto del modelo (verde más vivo/estilo low poly)
             matVertedero.diffuseColor = new BABYLON.Color3(0.36, 0.58, 0.22); 
             matVertedero.alpha = 1; // Opaco
             zonaVertedero.material = matVertedero;
@@ -199,15 +195,12 @@
             BABYLON.SceneLoader.ImportMesh("", "model/", "garbage_truck.glb", scene, function(meshes) {
                 camion = meshes[0]; // El mesh raíz
                 
-                // IMPORTANTE: Desactivar quaternions para poder rotar con .rotation.y
                 camion.rotationQuaternion = null;
 
-                camion.position = new BABYLON.Vector3(0, 0.5, 10); // Subir un poco para no chocar con el suelo al inicio
-                camion.rotation.y = 0; // Cambiado de Math.PI a 0 para invertir la dirección inicial
+                camion.position = new BABYLON.Vector3(0, 0.5, 10); 
+                camion.rotation.y = 0;
                 camion.scaling = new BABYLON.Vector3(0.012, 0.012, 0.012);
-                
-                // Colisiones retiradas
-                
+                                
                 // Asignar el camión como objetivo de la cámara
                 camera.lockedTarget = camion;
                 
@@ -353,11 +346,11 @@
 
             // --- Game Loop (Movimiento) ---
             const velocidad = 0.15;
-            const velocidadRotacion = 0.015; // Reducido para dar sensación de peso/resistencia
+            const velocidadRotacion = 0.015;
             scene.onBeforeRenderObservable.add(() => {
                 if (camion) {
                     let estaMoviendo = false;
-                    let direccionMovimiento = 0; // 1 = adelante, -1 = atrás
+                    let direccionMovimiento = 0;
                     
                     // Detectar si está avanzando o retrocediendo
                     if (inputMap["w"]) {
