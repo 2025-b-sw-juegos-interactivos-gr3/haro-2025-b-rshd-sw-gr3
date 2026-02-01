@@ -1,0 +1,16 @@
+{
+  "name": "sinapsis-prototipo",
+  "version": "0.1.0",
+  "description": "Prototipo 3D 'Sinapsis' usando Babylon.js",
+  "main": "game.js",
+  "scripts": {
+    "start:dev": "live-server --port=8000 --open=./index.html",
+    "start": "npm run start:dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}
